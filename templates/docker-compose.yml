@@ -8,7 +8,7 @@ x-logging: &default-logging
 
 services:
   proxy:
-    image: nginx:1-alpine
+    image: docker.io/library/nginx 
     ports:
       # actual and only port facing any connection from outside
       # Note, change the left number if port 1236 is already in use on your system
@@ -16,6 +16,7 @@ services:
       - "{{ lemmy_port }}:8536"
     volumes:
       - ./nginx_internal.conf:/etc/nginx/nginx.conf:ro,Z
+      - ./proxy_params:/etc/nginx/proxy_params:ro,Z
     restart: always
     logging: *default-logging
     depends_on:
@@ -28,7 +29,13 @@ services:
     restart: always
     logging: *default-logging
     environment:
-      - RUST_LOG="warn"
+{% if lemmy_env_vars is defined and lemmy_env_vars|length > 0 %}
+{% for item in lemmy_env_vars %}
+{% for key, value in item.items() %}
+      - {{ key }}={{ value }}
+{% endfor %}
+{% endfor %}
+{% endif %}
     volumes:
       - ./lemmy.hjson:/config/config.hjson:Z
     depends_on:
@@ -38,9 +45,13 @@ services:
   lemmy-ui:
     image: {{ lemmy_docker_ui_image }}
     environment:
-      - LEMMY_UI_LEMMY_INTERNAL_HOST=lemmy:8536
-      - LEMMY_UI_LEMMY_EXTERNAL_HOST={{ domain }}
-      - LEMMY_UI_HTTPS=true
+{% if lemmyui_env_vars is defined and lemmyui_env_vars|length > 0 %}
+{% for item in lemmyui_env_vars %}
+{% for key, value in item.items() %}
+      - {{ key }}={{ value }}
+{% endfor %}
+{% endfor %}
+{% endif %}
     volumes:
       - ./volumes/lemmy-ui/extra_themes:/app/extra_themes
     depends_on:
@@ -49,21 +60,22 @@ services:
     logging: *default-logging
 
   pictrs:
-    image: asonix/pictrs:0.4.0-rc.7
+    image: docker.io/asonix/pictrs:0.4.7
     # this needs to match the pictrs url in lemmy.hjson
     hostname: pictrs
     # we can set options to pictrs like this, here we set max. image size and forced format for conversion
     # entrypoint: /sbin/tini -- /usr/local/bin/pict-rs -p /mnt -m 4 --image-format webp
     environment:
-      - PICTRS_OPENTELEMETRY_URL=http://otel:4137
-      - PICTRS__API_KEY={{ postgres_password }}
-      - RUST_LOG=debug
-      - RUST_BACKTRACE=full
-      - PICTRS__MEDIA__VIDEO_CODEC=vp9
-      - PICTRS__MEDIA__GIF__MAX_WIDTH=256
-      - PICTRS__MEDIA__GIF__MAX_HEIGHT=256
-      - PICTRS__MEDIA__GIF__MAX_AREA=65536
-      - PICTRS__MEDIA__GIF__MAX_FRAME_COUNT=400
+{% if pictrs_env_vars is defined and pictrs_env_vars|length > 0 %}
+{% for item in pictrs_env_vars %}
+{% for key, value in item.items() %}
+      - {{ key }}={{ value }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+{% if pictrs_safety is defined and pictrs_safety|bool == true %}
+      - PICTRS__MEDIA__EXTERNAL_VALIDATION=http://{{ domain }}:14051/api/v1/scan/IPADDR
+{% endif %}
     user: 991:991
     volumes:
       - ./volumes/pictrs:/mnt:Z
@@ -72,24 +84,105 @@ services:
     deploy:
       resources:
         limits:
-          memory: 690m
+          memory: 1024m
 
   postgres:
-    image: postgres:15-alpine
+    image: docker.io/postgres:15-alpine
     hostname: postgres
+    ports:
+      - "5432:5432"
     environment:
-      - POSTGRES_USER=lemmy
-      - POSTGRES_PASSWORD={{ postgres_password }}
-      - POSTGRES_DB=lemmy
+{% if postgres_env_vars is defined and postgres_env_vars|length > 0 %}
+{% for item in postgres_env_vars %}
+{% for key, value in item.items() %}
+      - {{ key }}={{ value }}
+{% endfor %}
+{% endfor %}
+{% endif %}
     volumes:
       - ./volumes/postgres:/var/lib/postgresql/data:Z
       - ./customPostgresql.conf:/etc/postgresql.conf
     restart: always
+    command: postgres -c config_file=/etc/postgresql.conf
+    shm_size: 16gb
     logging: *default-logging
 
-  postfix:
-    image: mwader/postfix-relay
+{% if pictrs_safety is defined and pictrs_safety|bool == true %}
+  pictrs-safety:
+    image: ghcr.io/db0/pictrs-safety:v1.2.2
+    hostname: pictrs-safety
     environment:
-      - POSTFIX_myhostname={{ domain }}
-    restart: "always"
+{% if pictrs_safety_env_vars is defined and pictrs_safety_env_vars|length > 0 %}
+{% for item in pictrs_safety_env_vars %}
+{% for key, value in item.items() %}
+      - {{ key }}={{ value }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+    ports:
+      - "14051:14051"
+    user: 991:991
+    restart: always
     logging: *default-logging
+    depends_on:
+      - pictrs
+{% endif %}
+
+  watchtower_apps:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_LABEL_ENABLE=true
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=1600
+    restart: always
+  voyager:
+    image: ghcr.io/aeharding/voyager:main
+    ports:
+      - "5314:5314"
+    environment:
+      - CUSTOM_LEMMY_SERVERS=lemmynsfw.com
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: always
+  photon:
+    image: ghcr.io/xyphyn/photon
+    ports:
+      - "5315:3000"
+    environment:
+      - PUBLIC_INSTANCE_URL=lemmynsfw.com
+      - PUBLIC_NSFW_BLUR=false
+      - PUBLIC_SHOW_INSTANCES_USER=false
+      - PUBLIC_SHOW_INSTANCES_COMMUNITY=false
+      - PUBLIC_SHOW_INSTANCES_COMMENTS=false
+      - PUBLIC_EXPAND_SIDEBAR=false
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: always
+  alexandrite:
+    image: ghcr.io/sheodox/alexandrite
+    ports:
+      - "5316:3000"
+    environment:
+      - ALEXANDRITE_DEFAULT_INSTANCE=lemmynsfw.com
+      - ALEXANDRITE_FORCE_INSTANCE=lemmynsfw.com
+      - ALEXANDRITE_WELCOME_INSTANCE_HELP=false
+      - ALEXANDRITE_WELCOME_LEMMY_HELP=false
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: always
+  tesseract:
+    image: ghcr.io/asimons04/tesseract
+    ports:
+      - "5317:3000"
+    environment:
+      - PUBLIC_INSTANCE_URL=lemmynsfw.com
+      - PUBLIC_NSFW_BLUR=false
+      - PUBLIC_SHOW_INSTANCES_USER=false
+      - PUBLIC_SHOW_INSTANCES_COMMUNITY=false
+      - PUBLIC_SHOW_INSTANCES_COMMENTS=false
+      - PUBLIC_EXPAND_SIDEBAR=false
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: always
