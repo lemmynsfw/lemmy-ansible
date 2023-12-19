@@ -23,7 +23,7 @@ jobs:
           repository: xaegreal/fork-sync
           path: /tmp/fork-sync
       - name: Sync main branch
-        uses: xaegreal/fork-sync
+        uses: xaegreal/fork-sync:master
         with:
           token: ${{ env.PERSONAL_TOKEN }}
           owner: ${{ github.repository_owner }}
