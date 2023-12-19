@@ -23,7 +23,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           token: ${{ env.PERSONAL_TOKEN }}
-          path: ${{ env.LOCAL_BRANCH }}
+          path: repo
 
       - name: Checkout sync repo
         uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
 
       - name: Sync tags and apply patch
         run: |
-          cd ${{ env.LOCAL_BRANCH }}
+          cd repo
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name ${{ github.actor }}
           git config user.email ${{ github.actor }}@users.noreply.github.com
