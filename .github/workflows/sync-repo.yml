@@ -44,7 +44,9 @@ jobs:
               continue
             fi
             git checkout -b $tag $tag
-            git apply /tmp/diff.patch
+            git apply --verbose --whitespace=fix --3way /tmp/diff.patch
+            git diff --name-only --diff-filter=U
+            git checkout --theirs .
             git add .
             git commit -m "Auto apply NSFW patch to $tag"
             git tag $tag-${{ env.POSTFIX }}
