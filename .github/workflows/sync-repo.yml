@@ -17,8 +17,13 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      - name: Fetch sync repo
+        uses: actions/checkout@v4
+        with:
+          repository: xaegreal/fork-sync
+          path: /tmp/fork-sync
       - name: Sync main branch
-        uses: tgymnich/fork-sync@v1.8
+        uses: /tmp/fork-sync
         with:
           token: ${{ env.PERSONAL_TOKEN }}
           owner: ${{ github.repository_owner }}
