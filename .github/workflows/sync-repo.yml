@@ -60,7 +60,7 @@ jobs:
             fi
             git checkout -b $tag $tag
             git apply --verbose --whitespace=fix --3way /tmp/diff.patch
-            git --no-pager diff --name-only --diff-filter=U --relative
+            git --no-pager diff --name-only --diff-filter=U --relative --quiet
             git checkout --theirs .
             git add .
             git commit -m "Auto apply NSFW patch to $tag"
