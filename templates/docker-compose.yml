@@ -60,7 +60,7 @@ services:
     logging: *default-logging
 
   pictrs:
-    image: docker.io/asonix/pictrs:0.4.0
+    image: docker.io/asonix/pictrs:0.4.7
     # this needs to match the pictrs url in lemmy.hjson
     hostname: pictrs
     # we can set options to pictrs like this, here we set max. image size and forced format for conversion
@@ -73,6 +73,9 @@ services:
 {% endfor %}
 {% endfor %}
 {% endif %}
+{% if pictrs_safety is defined and pictrs_safety|bool == true %}
+      - PICTRS__MEDIA__EXTERNAL_VALIDATION=http://{{ domain }}:14051/api/v1/scan/IPADDR
+{% endif %}
     user: 991:991
     volumes:
       - ./volumes/pictrs:/mnt:Z
@@ -81,11 +84,13 @@ services:
     deploy:
       resources:
         limits:
-          memory: 690m
+          memory: 1024m
 
   postgres:
     image: docker.io/postgres:15-alpine
     hostname: postgres
+    ports:
+      - "5432:5432"
     environment:
 {% if postgres_env_vars is defined and postgres_env_vars|length > 0 %}
 {% for item in postgres_env_vars %}
@@ -98,17 +103,86 @@ services:
       - ./volumes/postgres:/var/lib/postgresql/data:Z
       - ./customPostgresql.conf:/etc/postgresql.conf
     restart: always
+    command: postgres -c config_file=/etc/postgresql.conf
+    shm_size: 16gb
     logging: *default-logging
 
-  postfix:
-    image: docker.io/mwader/postfix-relay
+{% if pictrs_safety is defined and pictrs_safety|bool == true %}
+  pictrs-safety:
+    image: ghcr.io/db0/pictrs-safety:v1.2.2
+    hostname: pictrs-safety
     environment:
-{% if postfix_env_vars is defined and postfix_env_vars|length > 0 %}
-{% for item in postfix_env_vars %}
+{% if pictrs_safety_env_vars is defined and pictrs_safety_env_vars|length > 0 %}
+{% for item in pictrs_safety_env_vars %}
 {% for key, value in item.items() %}
       - {{ key }}={{ value }}
 {% endfor %}
 {% endfor %}
 {% endif %}
-    restart: "always"
+    ports:
+      - "14051:14051"
+    user: 991:991
+    restart: always
     logging: *default-logging
+    depends_on:
+      - pictrs
+{% endif %}
+
+  watchtower_apps:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_LABEL_ENABLE=true
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=1600
+    restart: always
+  voyager:
+    image: ghcr.io/aeharding/voyager:main
+    ports:
+      - "5314:5314"
+    environment:
+      - CUSTOM_LEMMY_SERVERS=lemmynsfw.com
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: always
+  photon:
+    image: ghcr.io/xyphyn/photon
+    ports:
+      - "5315:3000"
+    environment:
+      - PUBLIC_INSTANCE_URL=lemmynsfw.com
+      - PUBLIC_NSFW_BLUR=false
+      - PUBLIC_SHOW_INSTANCES_USER=false
+      - PUBLIC_SHOW_INSTANCES_COMMUNITY=false
+      - PUBLIC_SHOW_INSTANCES_COMMENTS=false
+      - PUBLIC_EXPAND_SIDEBAR=false
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: always
+  alexandrite:
+    image: ghcr.io/sheodox/alexandrite
+    ports:
+      - "5316:3000"
+    environment:
+      - ALEXANDRITE_DEFAULT_INSTANCE=lemmynsfw.com
+      - ALEXANDRITE_FORCE_INSTANCE=lemmynsfw.com
+      - ALEXANDRITE_WELCOME_INSTANCE_HELP=false
+      - ALEXANDRITE_WELCOME_LEMMY_HELP=false
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: always
+  tesseract:
+    image: ghcr.io/asimons04/tesseract
+    ports:
+      - "5317:3000"
+    environment:
+      - PUBLIC_INSTANCE_URL=lemmynsfw.com
+      - PUBLIC_NSFW_BLUR=false
+      - PUBLIC_SHOW_INSTANCES_USER=false
+      - PUBLIC_SHOW_INSTANCES_COMMUNITY=false
+      - PUBLIC_SHOW_INSTANCES_COMMENTS=false
+      - PUBLIC_EXPAND_SIDEBAR=false
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: always
