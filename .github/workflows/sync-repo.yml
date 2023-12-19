@@ -30,6 +30,11 @@ jobs:
         with:
           repository: xaegreal/fork-sync
           path: fork-sync
+      - name: Install dependencies
+        run: |
+          cd fork-sync
+          npm install
+          npm run build
 
       - name: Sync main branch
         uses: ./fork-sync
@@ -41,6 +46,7 @@ jobs:
 
       - name: Sync tags and apply patch
         run: |
+          cd ${{ env.LOCAL_BRANCH }}
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name ${{ github.actor }}
           git config user.email ${{ github.actor }}@users.noreply.github.com
