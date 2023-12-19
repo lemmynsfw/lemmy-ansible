@@ -17,24 +17,28 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch sync repo
-        uses: actions/checkout@v4
-        with:
-          repository: xaegreal/fork-sync
-          path: /tmp/fork-sync
-      - name: Sync main branch
-        uses: /tmp/fork-sync/
-        with:
-          token: ${{ env.PERSONAL_TOKEN }}
-          owner: ${{ github.repository_owner }}
-          base: ${{ env.REMOTE_BRANCH }}
-          head: ${{ env.LOCAL_BRANCH }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
           token: ${{ env.PERSONAL_TOKEN }}
+          path: ${{ $env.LOCAL_BRANCH }}
+
+      - name: Checkout sync repo
+        uses: actions/checkout@v4
+        with:
+          repository: xaegreal/fork-sync
+          path: fork-sync
+
+      - name: Sync main branch
+        uses: fork-sync
+        with:
+          token: ${{ env.PERSONAL_TOKEN }}
+          owner: ${{ github.repository_owner }}
+          base: ${{ env.REMOTE_BRANCH }}
+          head: ${{ env.LOCAL_BRANCH }}
+
       - name: Sync tags and apply patch
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
