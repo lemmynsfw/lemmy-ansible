@@ -32,7 +32,7 @@ jobs:
           path: fork-sync
 
       - name: Sync main branch
-        uses: fork-sync
+        uses: ./fork-sync
         with:
           token: ${{ env.PERSONAL_TOKEN }}
           owner: ${{ github.repository_owner }}
