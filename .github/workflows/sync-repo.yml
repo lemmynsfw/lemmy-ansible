@@ -21,9 +21,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: xaegreal/fork-sync
-          path: ./fork-sync
+          path: /tmp/fork-sync
       - name: Sync main branch
-        uses: ./fork-sync
+        uses: /tmp/fork-sync/
         with:
           token: ${{ env.PERSONAL_TOKEN }}
           owner: ${{ github.repository_owner }}
