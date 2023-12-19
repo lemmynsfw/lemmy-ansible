@@ -134,7 +134,7 @@
         mode: "0644"
 
     - name: Request initial letsencrypt certificate
-      ansible.builtin.command: certbot certonly --nginx --agree-tos --cert-name '{{ domain }}' -d '{{ domain }}' -m '{{ letsencrypt_contact_email }}'
+      ansible.builtin.command: certbot certonly --nginx --agree-tos --cert-name '{{ domain }}' -d '{{ domain }}' -d 'www.{{ domain }}' -d 'voyager.{{ domain }}' -d 'photon.{{ domain }}' -d 'tesseract.{{ domain }}' -d 'alexandrite.{{ domain }}' -m '{{ letsencrypt_contact_email }}'
       args:
         creates: "/etc/letsencrypt/live/{{ domain }}/privkey.pem"
 
@@ -182,10 +182,15 @@
             - src: "templates/nginx.conf"
               dest: "/etc/nginx/sites-available/{{ domain }}.conf"
               mode: "0644"
+            - src: "templates/nginx_apps.conf"
+              dest: "/etc/nginx/conf.d/{{domain}}.conf"
+              mode: "0644"
           notify: Reload nginx
           vars:
-            lemmy_docker_image: "dessalines/lemmy:{{ lemmy_version | default(lookup('file', 'VERSION')) }}"
-            lemmy_docker_ui_image: "dessalines/lemmy-ui:{{ lemmy_ui_version | default(lemmy_version | default(lookup('file', 'VERSION'))) }}"
+            # lemmy_docker_image: "dessalines/lemmy:{{ lemmy_version | default(lookup('file', 'VERSION')) }}"
+            # lemmy_docker_ui_image: "dessalines/lemmy-ui:{{ lemmy_ui_version | default(lemmy_version | default(lookup('file', 'VERSION'))) }}"
+            lemmy_docker_image: "ghcr.io/lemmynsfw/lemmy:{{ lemmy_version | default(lookup('file', 'VERSION')) }}-nsfw"
+            lemmy_docker_ui_image: "ghcr.io/lemmynsfw/lemmy-ui:{{ lemmy_ui_version | default(lemmy_version | default(lookup('file', 'VERSION'))) }}-nsfw"
 
         - name: Set up nginx sites-enabled symlink
           notify: Reload nginx
@@ -248,4 +253,4 @@
         special_time: daily
         name: certbot-renew-lemmy
         user: root
-        job: "certbot certonly --nginx --cert-name '{{ domain }}' -d '{{ domain }}' --deploy-hook 'nginx -s reload'"
+        job: "certbot certonly --nginx --cert-name '{{ domain }}' -d '{{ domain }}' -d 'www.{{ domain }}' -d 'voyager.{{ domain }}' -d 'photon.{{ domain }}' -d 'tesseract.{{ domain }}' -d 'alexandrite.{{ domain }}' --deploy-hook 'nginx -s reload'"
