@@ -142,7 +142,7 @@ services:
     ports:
       - "5314:5314"
     environment:
-      - CUSTOM_LEMMY_SERVERS=lemmynsfw.com
+      - CUSTOM_LEMMY_SERVERS={{ domain }}
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     restart: always
@@ -151,7 +151,7 @@ services:
     ports:
       - "5315:3000"
     environment:
-      - PUBLIC_INSTANCE_URL=lemmynsfw.com
+      - PUBLIC_INSTANCE_URL={{ domain }}
       - PUBLIC_NSFW_BLUR=false
       - PUBLIC_SHOW_INSTANCES_USER=false
       - PUBLIC_SHOW_INSTANCES_COMMUNITY=false
@@ -165,8 +165,8 @@ services:
     ports:
       - "5316:3000"
     environment:
-      - ALEXANDRITE_DEFAULT_INSTANCE=lemmynsfw.com
-      - ALEXANDRITE_FORCE_INSTANCE=lemmynsfw.com
+      - ALEXANDRITE_DEFAULT_INSTANCE={{ domain }}
+      - ALEXANDRITE_FORCE_INSTANCE={{ domain }}
       - ALEXANDRITE_WELCOME_INSTANCE_HELP=false
       - ALEXANDRITE_WELCOME_LEMMY_HELP=false
     labels:
@@ -177,7 +177,7 @@ services:
     ports:
       - "5317:3000"
     environment:
-      - PUBLIC_INSTANCE_URL=lemmynsfw.com
+      - PUBLIC_INSTANCE_URL={{ domain }}
       - PUBLIC_NSFW_BLUR=false
       - PUBLIC_SHOW_INSTANCES_USER=false
       - PUBLIC_SHOW_INSTANCES_COMMUNITY=false
@@ -186,3 +186,17 @@ services:
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     restart: always
+  automod:
+    image: ornatot/lemmy-automoderator:latest
+    hostname: automod
+    environment:
+{% if lemmy_automod_env_vars is defined and lemmy_automod_env_vars|length > 0 %}
+{% for item in lemmy_automod_env_vars %}
+{% for key, value in item.items() %}
+      - {{ key }}={{ value }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+    restart: always
+    volumes:
+      - ./volumes/automoderator:/usr/src/app/database
