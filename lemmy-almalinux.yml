@@ -150,8 +150,6 @@
           owner: "root"
         - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/"
           owner: "root"
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/pictrs/"
-          owner: "991" # Matches docker-compose UID in docker-compose.yml
 
     - name: Set lemmy_port fact
       ansible.builtin.set_fact:
