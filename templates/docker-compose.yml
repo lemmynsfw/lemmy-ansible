@@ -78,6 +78,8 @@ services:
 {% endif %}
     user: 991:991
     restart: always
+    volumes:
+      - ./pictrs-magick-policy.xml:/usr/lib/ImageMagick-7.1.1/config-Q16HDRI/policy.xml
     logging: *default-logging
     deploy:
       resources:
@@ -169,20 +171,6 @@ services:
       - ALEXANDRITE_FORCE_INSTANCE={{ domain }}
       - ALEXANDRITE_WELCOME_INSTANCE_HELP=false
       - ALEXANDRITE_WELCOME_LEMMY_HELP=false
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
-    restart: always
-  tesseract:
-    image: ghcr.io/asimons04/tesseract
-    ports:
-      - "5317:3000"
-    environment:
-      - PUBLIC_INSTANCE_URL={{ domain }}
-      - PUBLIC_NSFW_BLUR=false
-      - PUBLIC_SHOW_INSTANCES_USER=false
-      - PUBLIC_SHOW_INSTANCES_COMMUNITY=false
-      - PUBLIC_SHOW_INSTANCES_COMMENTS=false
-      - PUBLIC_EXPAND_SIDEBAR=false
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     restart: always
