@@ -60,7 +60,7 @@ services:
     logging: *default-logging
 
   pictrs:
-    image: docker.io/asonix/pictrs:0.5.4
+    image: docker.io/asonix/pictrs:0.5.6
     # this needs to match the pictrs url in lemmy.hjson
     hostname: pictrs
     # we can set options to pictrs like this, here we set max. image size and forced format for conversion
@@ -78,8 +78,6 @@ services:
 {% endif %}
     user: 991:991
     restart: always
-    volumes:
-      - ./pictrs-magick-policy.xml:/usr/lib/ImageMagick-7.1.1/config-Q16HDRI/policy.xml
     logging: *default-logging
     deploy:
       resources:
