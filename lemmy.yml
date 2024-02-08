@@ -89,6 +89,7 @@
           - "nginx"
           - "certbot"
           - "python3-certbot-nginx"
+          - "python3-certbot-dns-cloudflare"
           - "apt-transport-https"
           - "ca-certificates"
           - "curl"
@@ -152,7 +153,7 @@
         mode: "0644"
 
     - name: Request initial letsencrypt certificate
-      ansible.builtin.command: certbot certonly --nginx --agree-tos --cert-name '{{ domain }}' -d '{{ domain }}' -d 'www.{{ domain }}' -d 'voyager.{{ domain }}' -d 'photon.{{ domain }}' -d 'alexandrite.{{ domain }}' -m '{{ letsencrypt_contact_email }}'
+      ansible.builtin.command: certbot certonly --dns-cloudflare --dns-cloudflare-credentials /opt/lemmy/{{ domain }}/cloudflare.ini -d {{ domain }},*.{{ domain }} --preferred-challenges dns-01
       args:
         creates: "/etc/letsencrypt/live/{{ domain }}/privkey.pem"
 
@@ -239,6 +240,14 @@
             owner: "1000"
             group: "1000"
 
+        - name: Add the cloudflare.ini
+          ansible.builtin.template:
+            src: "inventory/host_vars/{{ domain }}/cloudflare.ini"
+            dest: "{{ lemmy_base_dir }}/{{ domain }}/cloudflare.ini"
+            mode: "0400"
+            owner: "1000"
+            group: "1000"
+
         - name: Add the customPostgresql.conf
           ansible.builtin.template:
             src: "inventory/host_vars/{{ domain }}/customPostgresql.conf"
@@ -272,4 +281,4 @@
         special_time: daily
         name: certbot-renew-lemmy
         user: root
-        job: "certbot certonly --nginx --cert-name '{{ domain }}' -d '{{ domain }}' -d 'www.{{ domain }}' -d 'voyager.{{ domain }}' -d 'photon.{{ domain }}' -d 'alexandrite.{{ domain }}' --deploy-hook 'nginx -s reload'"
+        job: "certbot certonly --dns-cloudflare --dns-cloudflare-credentials /opt/lemmy/{{ domain }}/cloudflare.ini -d {{ domain }},*.{{ domain }} --preferred-challenges dns-01 --deploy-hook 'nginx -s reload'"
