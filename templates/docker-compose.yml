@@ -175,7 +175,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
     restart: always
   automod:
-    image: ornatot/lemmy-automoderator:latest
+    image: ghcr.io/lemmynsfw/lemmy-automoderator:latest
     hostname: automod
     environment:
 {% if lemmy_automod_env_vars is defined and lemmy_automod_env_vars|length > 0 %}
