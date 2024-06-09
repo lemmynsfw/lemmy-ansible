@@ -1,5 +1,3 @@
-version: "3.7"
-
 x-logging: &default-logging
   driver: "json-file"
   options:
@@ -87,7 +85,7 @@ services:
       - postgres
 
   postgres:
-    image: docker.io/postgres:15-alpine
+    image: docker.io/postgres:16-alpine
     hostname: postgres
     ports:
       - "5432:5432"
@@ -104,7 +102,7 @@ services:
       - ./customPostgresql.conf:/etc/postgresql.conf:Z
     restart: always
     command: postgres -c config_file=/etc/postgresql.conf
-    shm_size: 8gb
+    shm_size: {{ postgres_shm }}
     logging: *default-logging
 
 {% if pictrs_safety is defined and pictrs_safety|bool == true %}
