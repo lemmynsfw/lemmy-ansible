@@ -186,3 +186,40 @@ services:
     restart: always
     volumes:
       - ./volumes/automoderator:/usr/src/app/database
+
+  # rikudou stack
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+    restart: always
+    logging: *default-logging
+  webhooks:
+    image: ghcr.io/rikudousage/lemmy-webhook:latest
+    environment:
+      - LEMMY_HOST=postgres
+      - REDIS_HOST=redis
+      - LEMMY_PASSWORD={{ postgres_password }}
+      - API_REGISTRATION_ENABLED=0
+      - CORS_ALLOW_ORIGIN=^.*$$
+      - LARGE_PAYLOAD_SIZE=4092
+    ports:
+      - 5317:80
+    volumes:
+      - ./volumes/webhooks:/opt/database
+    restart: always
+    logging: *default-logging
+  automod_rikudou:
+    image: ghcr.io/rikudousage/lemmy-automod:latest
+    environment:
+{% if lemmy_automod_rikudou_env_vars is defined and lemmy_automod_rikudou_env_vars|length > 0 %}
+{% for item in lemmy_automod_rikudou_env_vars %}
+{% for key, value in item.items() %}
+      - {{ key }}={{ value }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+    volumes:
+      - ./volumes/automoderator_rikudou:/opt/database
+    restart: always
+    logging: *default-logging
