@@ -90,7 +90,7 @@ services:
     image: docker.io/postgres:15-alpine
     hostname: postgres
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
 {% if postgres_env_vars is defined and postgres_env_vars|length > 0 %}
 {% for item in postgres_env_vars %}
@@ -140,7 +140,7 @@ services:
   voyager:
     image: ghcr.io/aeharding/voyager:main
     ports:
-      - "5314:5314"
+      - "127.0.0.1:5314:5314"
     environment:
       - CUSTOM_LEMMY_SERVERS={{ domain }}
     labels:
@@ -149,7 +149,7 @@ services:
   photon:
     image: ghcr.io/xyphyn/photon
     ports:
-      - "5315:3000"
+      - "127.0.0.1:5315:3000"
     environment:
       - PUBLIC_INSTANCE_URL={{ domain }}
       - PUBLIC_NSFW_BLUR=false
@@ -163,7 +163,7 @@ services:
   alexandrite:
     image: ghcr.io/sheodox/alexandrite
     ports:
-      - "5316:3000"
+      - "127.0.0.1:5316:3000"
     environment:
       - ALEXANDRITE_DEFAULT_INSTANCE={{ domain }}
       - ALEXANDRITE_FORCE_INSTANCE={{ domain }}
@@ -191,7 +191,7 @@ services:
   redis:
     image: redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     restart: always
     logging: *default-logging
   webhooks:
@@ -204,7 +204,7 @@ services:
       - CORS_ALLOW_ORIGIN=^.*$$
       - LARGE_PAYLOAD_SIZE=4092
     ports:
-      - 5317:80
+      - 127.0.0.1:5317:80
     volumes:
       - ./volumes/webhooks:/opt/database
     restart: always
