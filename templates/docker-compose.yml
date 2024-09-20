@@ -8,7 +8,7 @@ x-logging: &default-logging
 
 services:
   proxy:
-    image: docker.io/library/nginx 
+    image: docker.io/library/nginx
     ports:
       # actual and only port facing any connection from outside
       # Note, change the left number if port 1236 is already in use on your system
@@ -147,7 +147,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
     restart: always
   photon:
-    image: ghcr.io/xyphyn/photon
+    image: ghcr.io/xyphyn/photon:v1.31.3
     ports:
       - "127.0.0.1:5315:3000"
     environment:
@@ -209,6 +209,12 @@ services:
       - ./volumes/webhooks:/opt/database
     restart: always
     logging: *default-logging
+  webhooks_ui:
+    image: ghcr.io/rikudousage/lemmy-webhook-manager:latest
+    ports:
+      - 127.0.0.1:5318:80 # map to whatever port you want
+    environment:
+      - API_URL=webhooks # replace with your api url
   automod_rikudou:
     image: ghcr.io/rikudousage/lemmy-automod:latest
     environment:
