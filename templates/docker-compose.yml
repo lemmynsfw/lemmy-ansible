@@ -200,7 +200,7 @@ services:
       - LEMMY_HOST=postgres
       - REDIS_HOST=redis
       - LEMMY_PASSWORD={{ postgres_password }}
-      - API_REGISTRATION_ENABLED=0
+      - API_REGISTRATION_ENABLED=1
       - CORS_ALLOW_ORIGIN=^.*$$
       - LARGE_PAYLOAD_SIZE=4092
     ports:
@@ -214,7 +214,7 @@ services:
     ports:
       - 127.0.0.1:5318:80 # map to whatever port you want
     environment:
-      - API_URL=webhooks # replace with your api url
+      - API_URL=https://webhooks-api.lemmynsfw.com # replace with your api url
   automod_rikudou:
     image: ghcr.io/rikudousage/lemmy-automod:latest
     environment:
