@@ -182,3 +182,44 @@ services:
     restart: always
     volumes:
       - ./volumes/automoderator:/usr/src/app/database
+
+#rikudou automod stack
+  automod_rikudou:
+    image: ghcr.io/rikudousage/lemmy-automod:dev@sha256:45d5c95c0590d4eb63167edd5a2e4ca6fa62cd130279df64f06a6a00702c8b3c
+    environment:
+{% if lemmy_automod_rikudou_env_vars is defined and lemmy_automod_rikudou_env_vars|length > 0 %}
+{% for item in lemmy_automod_rikudou_env_vars %}
+{% for key, value in item.items() %}
+      - {{ key }}={{ value }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+    volumes:
+      - ./volumes/automoderator_rikudou:/opt/database
+
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
+
+  webhooks:
+    image: ghcr.io/rikudousage/lemmy-webhook:0.18@sha256:63fb224cf100fbc807f652e767765312ce62a26e39fc13af85489751fba5e823
+    #platform:linux/amd64
+    environment:
+      - LEMMY_HOST=postgres # the hostname of the postgres database
+      - REDIS_HOST=redis # the hostname of the redis server, you can use the above redis container if you define it as part of this stack
+      - LEMMY_PASSWORD={{ postgres_password }} # the password to the postgres database
+      - API_REGISTRATION_ENABLED=1 # whether to allow users to register themselves via the api
+      - CORS_ALLOW_ORIGIN=^.*$$  # a regex for cors (you need to escape $ with another $)
+      - LARGE_PAYLOAD_SIZE=1024 # payloads larger than this size (in bytes) will be stored in a temporary table instead of fed directly to the consumer, default is 4096. If set to 0, all payloads will be stored.
+    ports:
+      - 127.0.0.1:5317:80 # you can skip this, if you don't use the management api
+    volumes:
+      - ./volumes/webhooks:/opt/database # bind a directory where the SQLite database will be created
+
+  webhooks-ui:
+    image: ghcr.io/rikudousage/lemmy-webhook-manager:latest
+    ports:
+      - 5318:80 # map to whatever port you want
+    environment:
+      - API_URL=https://webhooks-api.{{ domain }} # replace with your api url
