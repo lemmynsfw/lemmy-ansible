@@ -218,9 +218,9 @@ services:
       - 127.0.0.1:5320:3000
     restart: "always"
 
+#rikudou automod stack
   automod:
-    image: ghcr.io/lemmynsfw/lemmy-automoderator:latest
-    hostname: automod
+    image: ghcr.io/rikudousage/lemmy-automod:2
     environment:
 {% if lemmy_automod_env_vars is defined and lemmy_automod_env_vars|length > 0 %}
 {% for item in lemmy_automod_env_vars %}
@@ -229,23 +229,8 @@ services:
 {% endfor %}
 {% endfor %}
 {% endif %}
-    restart: always
     volumes:
-      - ./volumes/automoderator:/usr/src/app/database
-
-#rikudou automod stack
-  automod_rikudou:
-    image: ghcr.io/rikudousage/lemmy-automod:dev@sha256:45d5c95c0590d4eb63167edd5a2e4ca6fa62cd130279df64f06a6a00702c8b3c
-    environment:
-{% if lemmy_automod_rikudou_env_vars is defined and lemmy_automod_rikudou_env_vars|length > 0 %}
-{% for item in lemmy_automod_rikudou_env_vars %}
-{% for key, value in item.items() %}
-      - {{ key }}={{ value }}
-{% endfor %}
-{% endfor %}
-{% endif %}
-    volumes:
-      - ./volumes/automoderator_rikudou:/opt/database
+      - ./volumes/automod:/opt/database
 
   redis:
     image: redis
@@ -253,7 +238,7 @@ services:
       - 127.0.0.1:6379:6379
 
   webhooks:
-    image: ghcr.io/rikudousage/lemmy-webhook:0.18@sha256:63fb224cf100fbc807f652e767765312ce62a26e39fc13af85489751fba5e823
+    image: ghcr.io/rikudousage/lemmy-webhook:0
     #platform:linux/amd64
     environment:
       - LEMMY_HOST=postgres # the hostname of the postgres database
@@ -268,7 +253,7 @@ services:
       - ./volumes/webhooks:/opt/database # bind a directory where the SQLite database will be created
 
   webhooks-ui:
-    image: ghcr.io/rikudousage/lemmy-webhook-manager:latest
+    image: ghcr.io/rikudousage/lemmy-webhook-manager:1
     ports:
       - 127.0.0.1:5318:80 # map to whatever port you want
     environment:
