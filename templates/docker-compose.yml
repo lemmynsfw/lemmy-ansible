@@ -231,6 +231,20 @@ services:
 {% endif %}
     volumes:
       - ./volumes/automod:/opt/database
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 2gb
+    ports:
+      - 4005:80
+      
+  automod_manager:
+    image: ghcr.io/rikudousage/lemmy-automod-manager:dev
+    environment:
+      - API_URL=http://127.0.0.1:4005
+    ports:
+      - 4006:80
 
   redis:
     image: redis
