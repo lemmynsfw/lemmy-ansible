@@ -73,14 +73,20 @@ services:
       - PICTRS__MEDIA__EXTERNAL_VALIDATION=http://{{ domain }}:14051/api/v1/scan/IPADDR
 {% endif %}
     user: 991:991
-    volumes:
-      - ./volumes/pictrs:/mnt:Z
     restart: always
     logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 4gb
+    depends_on:
+      - postgres
 
   postgres:
     image: docker.io/pgautoupgrade/pgautoupgrade:16-alpine
     hostname: postgres
+    ports:
+      - "127.0.0.1:5432:5432"
     environment:
 {% if postgres_env_vars is defined and postgres_env_vars|length > 0 %}
 {% for item in postgres_env_vars %}
@@ -97,19 +103,6 @@ services:
     shm_size: {{ postgres_shm }}
     logging: *default-logging
 
-  postfix:
-    image: docker.io/mwader/postfix-relay
-    environment:
-{% if postfix_env_vars is defined and postfix_env_vars|length > 0 %}
-{% for item in postfix_env_vars %}
-{% for key, value in item.items() %}
-      - {{ key }}={{ value }}
-{% endfor %}
-{% endfor %}
-{% endif %}
-    restart: "always"
-    logging: *default-logging
-
 {% if pictrs_safety is defined and pictrs_safety|bool == true %}
   pictrs-safety:
     image: ghcr.io/db0/pictrs-safety:v1.2.2
@@ -123,10 +116,159 @@ services:
 {% endfor %}
 {% endif %}
     ports:
-      - "14051:14051"
+      - "127.0.0.1:14051:14051"
     user: 991:991
     restart: always
     logging: *default-logging
     depends_on:
       - pictrs
 {% endif %}
+
+  watchtower_apps:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_LABEL_ENABLE=true
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=1600
+    restart: always
+  voyager:
+    image: ghcr.io/aeharding/voyager:main
+    ports:
+      - "127.0.0.1:5314:5314"
+    environment:
+      - CUSTOM_LEMMY_SERVERS={{ domain }}
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: always
+  photon:
+    image: ghcr.io/xyphyn/photon
+    ports:
+      - "127.0.0.1:5315:3000"
+    environment:
+      - PUBLIC_INSTANCE_URL={{ domain }}
+      - PUBLIC_NSFW_BLUR=false
+      - PUBLIC_SHOW_INSTANCES_USER=false
+      - PUBLIC_SHOW_INSTANCES_COMMUNITY=false
+      - PUBLIC_SHOW_INSTANCES_COMMENTS=false
+      - PUBLIC_EXPAND_SIDEBAR=false
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: always
+  alexandrite:
+    image: ghcr.io/sheodox/alexandrite
+    ports:
+      - "127.0.0.1:5316:3000"
+    environment:
+      - ALEXANDRITE_DEFAULT_INSTANCE={{ domain }}
+      - ALEXANDRITE_FORCE_INSTANCE={{ domain }}
+      - ALEXANDRITE_WELCOME_INSTANCE_HELP=false
+      - ALEXANDRITE_WELCOME_LEMMY_HELP=false
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: always
+  mlmym:
+    image: ghcr.io/rystaf/mlmym:latest
+    environment:
+      - LEMMY_DOMAIN={{ domain }}
+    ports:
+      - 127.0.0.1:5319:8080
+    restart: always
+  tesseract:
+    image: ghcr.io/asimons04/tesseract:v1.4.21
+    environment:
+      # The domain of Tesseract's 'default' instance. This is the only required config variable
+      - PUBLIC_INSTANCE_URL={{ domain }}
+      # By default, Tesseract locks itself to the configured instance. To allow users to add accounts from other instances, set this to false.
+      - PUBLIC_LOCK_TO_INSTANCE=true
+      # Feed, feed sort, and comment sort settings
+      - PUBLIC_DEFAULT_FEED=Local
+      - PUBLIC_DEFAULT_FEED_SORT=Active
+      - PUBLIC_DEFAULT_COMMENT_SORT=Top
+      # Default to Dark Theme instead of "System"
+      - PUBLIC_THEME=dark
+      # Media Proxying
+      # Enable the media proxying module and make it available for use.  It is disabled by default.
+      - PUBLIC_ENABLE_MEDIA_PROXY=true
+      # List of domains that should not be proxied (content reasons, because they won't work with the proxy, etc)
+      - PUBLIC_MEDIA_PROXY_BLACKLIST=mintboard.org,iili.io,img.shields.io
+      - PUBLIC_ENABLE_MEDIA_PROXY_LOCAL=true
+      # Pre-set the "Use media proxy" setting for all users.  If set to false (default), users will need to go into Settings->Media to enable image proxying.
+      - PUBLIC_ENABLE_USER_MEDIA_PROXY=true
+      # Media Caching; disabled by default. Enabled and configured here.
+      - PUBLIC_ENABLE_MEDIA_CACHE=true
+      - PUBLIC_ENABLE_MEDIA_CACHE_LOCAL=true
+      - PUBLIC_MEDIA_CACHE_DURATION=4320
+      - PUBLIC_MEDIA_CACHE_KEEP_HOT_ITEMS=true
+      - PUBLIC_MEDIA_CACHE_MAX_SIZE=500
+      - PUBLIC_MEDIA_CACHE_HOUSEKEEP_INTERVAL=5
+      - PUBLIC_MEDIA_CACHE_HOUSEKEEP_STARTUP=true
+      # List of Invidious/Piped domains which should be used for detection. See docs/CustomYoutubeFrontends.md for more in fo.
+      - |-
+        PUBLIC_CUSTOM_INVIDIOUS=
+          i.devol.it,
+          piped.adminforge.de
+    # Tesseract uses /app/cache inside the container to persist lookups and for the media cache. This will work without a volume, but anything cached will not persist after the container is restarted.
+    # Note:  The host directory must be owned by UID/GID 1000.
+    volumes:
+      - ./volumes/tesseract/cache:/app/cache
+    # Bind to localhost:8081 instead of the container's default port of 3000
+    ports:
+      - 127.0.0.1:5320:3000
+    restart: "always"
+
+#rikudou automod stack
+  automod:
+    image: ghcr.io/rikudousage/lemmy-automod:2
+    environment:
+{% if lemmy_automod_env_vars is defined and lemmy_automod_env_vars|length > 0 %}
+{% for item in lemmy_automod_env_vars %}
+{% for key, value in item.items() %}
+      - {{ key }}={{ value }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+    volumes:
+      - ./volumes/automod:/opt/database
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 2gb
+    ports:
+      - 4005:80
+
+  automod_manager:
+    image: ghcr.io/rikudousage/lemmy-automod-manager:dev
+    environment:
+      - API_URL=http://127.0.0.1:4005
+    ports:
+      - 4006:80
+
+  redis:
+    image: redis
+    ports:
+      - 127.0.0.1:6379:6379
+
+  webhooks:
+    image: ghcr.io/rikudousage/lemmy-webhook:0
+    #platform:linux/amd64
+    environment:
+      - LEMMY_HOST=postgres # the hostname of the postgres database
+      - REDIS_HOST=redis # the hostname of the redis server, you can use the above redis container if you define it as part of this stack
+      - LEMMY_PASSWORD={{ postgres_password }} # the password to the postgres database
+      - API_REGISTRATION_ENABLED=1 # whether to allow users to register themselves via the api
+      - CORS_ALLOW_ORIGIN=^.*$$  # a regex for cors (you need to escape $ with another $)
+      - LARGE_PAYLOAD_SIZE=1024 # payloads larger than this size (in bytes) will be stored in a temporary table instead of fed directly to the consumer, default is 4096. If set to 0, all payloads will be stored.
+    ports:
+      - 127.0.0.1:5317:80 # you can skip this, if you don't use the management api
+    volumes:
+      - ./volumes/webhooks:/opt/database # bind a directory where the SQLite database will be created
+
+  webhooks-ui:
+    image: ghcr.io/rikudousage/lemmy-webhook-manager:1
+    ports:
+      - 127.0.0.1:5318:80 # map to whatever port you want
+    environment:
+      - API_URL=https://webhooks-api.{{ domain }} # replace with your api url
