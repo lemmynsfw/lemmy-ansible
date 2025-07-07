@@ -251,7 +251,7 @@
           vars:
             # lemmy_docker_image: "dessalines/lemmy:{{ lemmy_version | default(lookup('file', 'VERSION')) }}"
             # lemmy_docker_ui_image: "dessalines/lemmy-ui:{{ lemmy_ui_version | default(lemmy_version | default(lookup('file', 'VERSION'))) }}"
-            lemmy_docker_image: "ghcr.io/lemmynsfw/lemmy:{{ lemmy_version | default(lookup('file', 'VERSION')) }}-nsfw"
+            lemmy_docker_image: "dessalines/lemmy:{{ lemmy_version | default(lookup('file', 'VERSION')) }}"
             lemmy_docker_ui_image: "ghcr.io/lemmynsfw/lemmy-ui:{{ lemmy_ui_version | default(lemmy_version | default(lookup('file', 'VERSION'))) }}-nsfw"
           tags:
             - configs
