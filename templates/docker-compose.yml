@@ -169,7 +169,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
     restart: always
   mlmym:
-    image: ghcr.io/rystaf/mlmym:latest
+    image: ghcr.io/fedihosting-foundation-forks/mlmym:latest
     environment:
       - LEMMY_DOMAIN={{ domain }}
     ports:
