@@ -217,3 +217,11 @@ services:
     ports:
       - 127.0.0.1:5320:3000
     restart: "always"
+
+  #automod/community bot config
+  automodbot:
+    build: 
+      dockerfile: {{ lemmy_base_dir }}/{{ domain }}/community_bot/Dockerfile
+      context: {{ lemmy_base_dir }}/{{ domain }}/community_bot
+    # volumes:
+    #   - {{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot:/bot/resources

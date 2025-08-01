@@ -210,7 +210,69 @@
           owner: "www-data"
       tags:
         - directories
-
+    - name: Clone community bot
+      git:
+        repo: https://github.com/lemmynsfw/community_bot.git
+        dest: "{{ lemmy_base_dir }}/{{domain}}/community_bot"
+      tags:
+        - directories
+    - name: Create community_bot folder and contents
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        owner: "{{ item.owner }}"
+        state: "{{ item.state }}"
+        mode: "0755"
+      loop:
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources"
+          state: directory
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/welcome"
+          state: directory
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/vote.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/users.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/games.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/autopost.db"
+          state: touch
+          owner: "root"     
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/giveaway.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/reports.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/rss.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/tags.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/vote.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/mod_actions.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/zippy.log"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/last_ver"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/welcome/bus.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/welcome/welcome.db"
+          state: touch
+          owner: "root"
+      tags:
+        - directories
     - name: Deploy configuration files
       block:
         - name: Generate random port for lemmy service
@@ -280,6 +342,16 @@
                 dest: "/etc/nginx/sites-enabled/{{ domain }}.conf"
                 state: link
 
+        - name: Add the community bot env
+          ansible.builtin.template:
+            src: "inventory/host_vars/{{ domain }}/community_bot.env"
+            dest: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/.env"
+            mode: "0600"
+            owner: "1000"
+            group: "1000"
+          tags:
+            - configs
+
         - name: Add the config.hjson
           ansible.builtin.template:
             src: "inventory/host_vars/{{ domain }}/config.hjson"
@@ -321,6 +393,7 @@
       community.docker.docker_compose_v2:
         project_src: "{{ lemmy_base_dir }}/{{ domain }}"
         state: present
+        build: always
         pull: always
         remove_orphans: true
       tags:
