@@ -223,52 +223,52 @@
         state: "{{ item.state }}"
         mode: "0755"
       loop:
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/resources"
           state: directory
           owner: "root"
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/welcome"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/welcome"
           state: directory
           owner: "root"
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/vote.db"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/vote.db"
           state: touch
           owner: "root"
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/users.db"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/users.db"
           state: touch
           owner: "root"
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/games.db"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/games.db"
           state: touch
           owner: "root"
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/autopost.db"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/autopost.db"
           state: touch
           owner: "root"     
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/giveaway.db"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/giveaway.db"
           state: touch
           owner: "root"
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/reports.db"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/reports.db"
           state: touch
           owner: "root"
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/rss.db"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/rss.db"
           state: touch
           owner: "root"
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/tags.db"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/tags.db"
           state: touch
           owner: "root"
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/vote.db"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/vote.db"
           state: touch
           owner: "root"
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/mod_actions.db"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/mod_actions.db"
           state: touch
           owner: "root"
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/zippy.log"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/zippy.log"
           state: touch
           owner: "root"
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/last_ver"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/last_ver"
           state: touch
           owner: "root"
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/welcome/bus.db"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/welcome/bus.db"
           state: touch
           owner: "root"
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/resources/welcome/welcome.db"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/welcome/welcome.db"
           state: touch
           owner: "root"
       tags:

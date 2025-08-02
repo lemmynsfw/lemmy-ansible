@@ -223,5 +223,5 @@ services:
     build: 
       dockerfile: {{ lemmy_base_dir }}/{{ domain }}/community_bot/Dockerfile
       context: {{ lemmy_base_dir }}/{{ domain }}/community_bot
-    # volumes:
-    #   - {{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot:/bot/resources
+    volumes:
+      - {{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot:/bot/resources
