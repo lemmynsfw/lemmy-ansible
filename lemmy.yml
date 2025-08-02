@@ -223,7 +223,7 @@
         state: "{{ item.state }}"
         mode: "0755"
       loop:
-        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/resources"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot"
           state: directory
           owner: "root"
         - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/welcome"
