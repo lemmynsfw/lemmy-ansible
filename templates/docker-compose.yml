@@ -75,10 +75,6 @@ services:
     user: 991:991
     restart: always
     logging: *default-logging
-    deploy:
-      resources:
-        limits:
-          memory: 4gb
     depends_on:
       - postgres
 
@@ -218,10 +214,10 @@ services:
       - 127.0.0.1:5320:3000
     restart: "always"
 
-  #automod/community bot config
-  automodbot:
-    build: 
-      dockerfile: {{ lemmy_base_dir }}/{{ domain }}/community_bot/Dockerfile
-      context: {{ lemmy_base_dir }}/{{ domain }}/community_bot
-    volumes:
-      - {{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot:/bot/resources
+  # #automod/community bot config
+  # automodbot:
+  #   build: 
+  #     dockerfile: {{ lemmy_base_dir }}/{{ domain }}/community_bot/Dockerfile
+  #     context: {{ lemmy_base_dir }}/{{ domain }}/community_bot
+  #   volumes:
+  #     - {{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot:/bot/resources
