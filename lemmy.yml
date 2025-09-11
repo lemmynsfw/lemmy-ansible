@@ -104,6 +104,7 @@
           - "nginx"
           - "certbot"
           - "python3-certbot-nginx"
+          - "python3-certbot-dns-cloudflare"
           - "apt-transport-https"
           - "ca-certificates"
           - "curl"
@@ -184,7 +185,7 @@
         - docker
 
     - name: Request initial letsencrypt certificate
-      ansible.builtin.command: certbot certonly --nginx --agree-tos --cert-name '{{ domain }}' -d '{{ domain }}' -m '{{ letsencrypt_contact_email }}'
+      ansible.builtin.command: certbot certonly --dns-cloudflare --dns-cloudflare-credentials /opt/lemmy/{{ domain }}/cloudflare.ini -d {{ domain }},*.{{ domain }} --preferred-challenges dns-01
       args:
         creates: "/etc/letsencrypt/live/{{ domain }}/privkey.pem"
       tags:
@@ -209,7 +210,69 @@
           owner: "www-data"
       tags:
         - directories
-
+    - name: Clone community bot
+      git:
+        repo: https://github.com/lemmynsfw/community_bot.git
+        dest: "{{ lemmy_base_dir }}/{{domain}}/community_bot"
+      tags:
+        - directories
+    - name: Create community_bot folder and contents
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        owner: "{{ item.owner }}"
+        state: "{{ item.state }}"
+        mode: "0755"
+      loop:
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot"
+          state: directory
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/welcome"
+          state: directory
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/vote.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/users.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/games.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/autopost.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/giveaway.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/reports.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/rss.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/tags.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/vote.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/mod_actions.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/zippy.log"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/last_ver"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/welcome/bus.db"
+          state: touch
+          owner: "root"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot/welcome/welcome.db"
+          state: touch
+          owner: "root"
+      tags:
+        - directories
     - name: Deploy configuration files
       block:
         - name: Generate random port for lemmy service
@@ -243,15 +306,19 @@
             - src: "templates/nginx.conf"
               dest: "/etc/nginx/sites-available/{{ domain }}.conf"
               mode: "0644"
+            - src: "templates/nginx_apps.conf"
+              dest: "/etc/nginx/conf.d/{{domain}}.conf"
+              mode: "0644"
           notify: Reload nginx
           vars:
+            # lemmy_docker_image: "dessalines/lemmy:{{ lemmy_version | default(lookup('file', 'VERSION')) }}"
+            # lemmy_docker_ui_image: "dessalines/lemmy-ui:{{ lemmy_ui_version | default(lemmy_version | default(lookup('file', 'VERSION'))) }}"
             lemmy_docker_image: "dessalines/lemmy:{{ lemmy_version | default(lookup('file', 'VERSION')) }}"
             lemmy_docker_ui_image: "dessalines/lemmy-ui:{{ lemmy_ui_version | default(lemmy_version | default(lookup('file', 'VERSION'))) }}"
           tags:
             - configs
             - nginx
             - docker
-
         - name: Set up nginx sites-enabled symlink
           notify: Reload nginx
           tags:
@@ -275,6 +342,16 @@
                 dest: "/etc/nginx/sites-enabled/{{ domain }}.conf"
                 state: link
 
+        - name: Add the community bot env
+          ansible.builtin.template:
+            src: "inventory/host_vars/{{ domain }}/community_bot.env"
+            dest: "{{ lemmy_base_dir }}/{{ domain }}/community_bot/.env"
+            mode: "0600"
+            owner: "1000"
+            group: "1000"
+          tags:
+            - configs
+
         - name: Add the config.hjson
           ansible.builtin.template:
             src: "inventory/host_vars/{{ domain }}/config.hjson"
@@ -284,6 +361,14 @@
             group: "1000"
           tags:
             - configs
+
+        - name: Add the cloudflare.ini
+          ansible.builtin.template:
+            src: "inventory/host_vars/{{ domain }}/cloudflare.ini"
+            dest: "{{ lemmy_base_dir }}/{{ domain }}/cloudflare.ini"
+            mode: "0400"
+            owner: "1000"
+            group: "1000"
 
         - name: Add the customPostgresql.conf
           ansible.builtin.template:
@@ -308,6 +393,7 @@
       community.docker.docker_compose_v2:
         project_src: "{{ lemmy_base_dir }}/{{ domain }}"
         state: present
+        build: always
         pull: always
         remove_orphans: true
       tags:
@@ -318,7 +404,7 @@
         special_time: daily
         name: certbot-renew-lemmy
         user: root
-        job: "certbot certonly --nginx --cert-name '{{ domain }}' -d '{{ domain }}' --deploy-hook 'nginx -s reload'"
+        job: "certbot certonly --dns-cloudflare --dns-cloudflare-credentials /opt/lemmy/{{ domain }}/cloudflare.ini -d {{ domain }},*.{{ domain }} --preferred-challenges dns-01 --deploy-hook 'nginx -s reload'"
       tags:
         - certbot
         - ssl
