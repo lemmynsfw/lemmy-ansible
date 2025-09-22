@@ -79,7 +79,7 @@ services:
       - postgres
 
   postgres:
-    image: docker.io/pgautoupgrade/pgautoupgrade:16-alpine
+    image: docker.io/pgautoupgrade/pgautoupgrade:17-alpine
     hostname: postgres
     ports:
       - "127.0.0.1:5432:5432"
