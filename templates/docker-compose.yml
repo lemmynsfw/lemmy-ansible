@@ -155,7 +155,7 @@ services:
     restart: always
     logging: *default-logging
     depends_on:
-      - pictrs    # tsdns.{{domain}} 3001;
+      - pictrs   
 {% endif %}
 
   watchtower_apps:
