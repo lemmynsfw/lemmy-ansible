@@ -35,8 +35,10 @@ services:
     volumes:
       - ./lemmy.hjson:/config/config.hjson:Z
     depends_on:
-      - postgres
-      - pictrs
+      postgres:
+        condition: service_healthy
+      pictrs:
+        condition: service_healthy
 
   lemmy-ui:
     image: {{ lemmy_docker_ui_image }}
@@ -77,7 +79,14 @@ services:
     logging: *default-logging
     depends_on:
       - postgres
-
+    healthcheck:
+      test: wget -qO- http://127.0.0.1:8080/healthz || exit 1
+      start_period: 5s
+      start_interval: 1s
+      interval: 20s
+      timeout: 2s
+      retries: 3
+      
   postgres:
     image: docker.io/pgautoupgrade/pgautoupgrade:17-alpine
     hostname: postgres
@@ -98,6 +107,35 @@ services:
     command: postgres -c config_file=/etc/postgresql.conf
     shm_size: {{ postgres_shm }}
     logging: *default-logging
+    healthcheck:
+      # https://github.com/peter-evans/docker-compose-healthcheck/pull/17
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U lemmy -d lemmy"]
+      start_period: 5s
+      start_interval: 1s
+      interval: 20s
+      timeout: 2s
+      retries: 3
+
+  postgresql-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:latest
+    ports:
+      - "127.0.0.1:9187:9187"
+{% if postgresql_exporter_env_vars is defined and postgresql_exporter_env_vars|length > 0 %}
+    environment:
+{% for item in postgresql_exporter_env_vars %}
+{% for key, value in item.items() %}
+      - {{ key }}={{ value }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+    depends_on:
+      prometheus:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    
+
 
 {% if pictrs_safety is defined and pictrs_safety|bool == true %}
   pictrs-safety:
@@ -165,9 +203,11 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
     restart: always
   mlmym:
-    image: ghcr.io/fedihosting-foundation-forks/mlmym:latest
+    image: ghcr.io/rystaf/mlmym:latest
     environment:
       - LEMMY_DOMAIN={{ domain }}
+      - LISTING=local
+      - SORT=Active
     ports:
       - 127.0.0.1:5319:8080
     restart: always
@@ -221,3 +261,52 @@ services:
   #     context: {{ lemmy_base_dir }}/{{ domain }}/community_bot
   #   volumes:
   #     - {{ lemmy_base_dir }}/{{ domain }}/volumes/community_bot:/bot/resources
+
+  # logging monitoring
+
+  prometheus:
+    image: "prom/prometheus"
+    hostname: prometheus
+    volumes:
+      - "./prometheus.yml:/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana
+    hostname: grafana
+    volumes:
+      - ./volumes/grafana:/var/lib/grafana
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+
+#   tailscale-nginx:
+#     image: tailscale/tailscale:latest
+#     hostname: tailscale-nginx
+# {% if tailscale_nginx_vars is defined and tailscale_nginx_vars|length > 0 %}
+#     environment:
+# {% for item in tailscale_nginx_vars %}
+# {% for key, value in item.items() %}
+#       - {{ key }}={{ value }}
+# {% endfor %}
+# {% endfor %}
+# {% endif %}
+#     volumes:
+#       - ./volumes/tailscale-nginx/state:/var/lib/tailscale
+#     devices:
+#       - /dev/net/tun:/dev/net/tun
+#     cap_add:
+#       - net_admin
+#     restart: unless-stopped
+
+
+  # adguard-tailscale:
+  #   image: "adguard/adguardhome:latest"
+  #   ports:
+  #     - 127.0.0.1:3001:443
+  #   container_name: "adguard-tailscale"
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ./volumes/adguard/work:/opt/adguardhome/work
+  #     - ./volumes/adguard/config:/opt/adguardhome/conf

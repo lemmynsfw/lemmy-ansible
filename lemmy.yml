@@ -206,6 +206,8 @@
           owner: "root"
         - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/pictrs/"
           owner: "991"
+        - path: "{{ lemmy_base_dir }}/{{ domain }}/volumes/grafana"
+          owner: "472"
         - path: "/var/cache/lemmy/{{ domain }}/"
           owner: "www-data"
       tags:
@@ -380,6 +382,17 @@
           tags:
             - configs
             - postgresql
+
+        - name: Add the prometheus.yml
+          ansible.builtin.template:
+            src: "inventory/host_vars/{{ domain }}/prometheus.yml"
+            dest: "{{ lemmy_base_dir }}/{{ domain }}/prometheus.yml"
+            mode: "0644"
+            owner: root
+            group: root
+          tags:
+            - configs
+            - prometheus
 
     - name: Enable and start docker service
       ansible.builtin.systemd:
