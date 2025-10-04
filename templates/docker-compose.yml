@@ -155,7 +155,7 @@ services:
     restart: always
     logging: *default-logging
     depends_on:
-      - pictrs
+      - pictrs    # tsdns.{{domain}} 3001;
 {% endif %}
 
   watchtower_apps:
@@ -218,7 +218,7 @@ services:
       - PUBLIC_INSTANCE_URL={{ domain }}
       # By default, Tesseract locks itself to the configured instance. To allow users to add accounts from other instances, set this to false.
       - PUBLIC_LOCK_TO_INSTANCE=true
-      # Feed, feed sort, and comment sort settings
+      # Feed, feed sort, and comment sort settings    # tsdns.{{domain}} 3001;
       - PUBLIC_DEFAULT_FEED=Local
       - PUBLIC_DEFAULT_FEED_SORT=Active
       - PUBLIC_DEFAULT_COMMENT_SORT=Top
@@ -280,33 +280,3 @@ services:
     restart: unless-stopped
     ports:
       - '3000:3000'
-
-#   tailscale-nginx:
-#     image: tailscale/tailscale:latest
-#     hostname: tailscale-nginx
-# {% if tailscale_nginx_vars is defined and tailscale_nginx_vars|length > 0 %}
-#     environment:
-# {% for item in tailscale_nginx_vars %}
-# {% for key, value in item.items() %}
-#       - {{ key }}={{ value }}
-# {% endfor %}
-# {% endfor %}
-# {% endif %}
-#     volumes:
-#       - ./volumes/tailscale-nginx/state:/var/lib/tailscale
-#     devices:
-#       - /dev/net/tun:/dev/net/tun
-#     cap_add:
-#       - net_admin
-#     restart: unless-stopped
-
-
-  # adguard-tailscale:
-  #   image: "adguard/adguardhome:latest"
-  #   ports:
-  #     - 127.0.0.1:3001:443
-  #   container_name: "adguard-tailscale"
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ./volumes/adguard/work:/opt/adguardhome/work
-  #     - ./volumes/adguard/config:/opt/adguardhome/conf
