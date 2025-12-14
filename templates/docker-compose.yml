@@ -40,11 +40,7 @@ services:
       postgres:
         condition: service_healthy
       pictrs:
-<<<<<<< HEAD
-        condition: service_healthy
-=======
         condition: service_started
->>>>>>> 5369c7269e611822e890c507ab2ff567a1c28029
 
   lemmy-ui:
     image: {{ lemmy_docker_ui_image }}
